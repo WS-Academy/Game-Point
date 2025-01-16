@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title>Vuejs Car Game</title>
+    <link rel="stylesheet" href="./style.css">
+  
+  </head>
+  <body>
+  <!-- partial:index.partial.html -->
+  
+  
+  
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="X-UA-Compatible" content="ie=edge">
+      <title>Document</title>
+      <link rel="stylesheet" type="text/css" href="/Infinite Race/race.css">
+  
+  
+      
+  
+  <div id="game" v-cloak="">
+  
+  <div class="text-center text">
+      <h1>Oyun Notları</h1>
+          <b>Yukarı aşağı</b> yön tuşları ile hareket.
+          <br>
+          <b>space tuşu</b> ile yukarı doğru kaydırma hareketi yapabilirsiniz.
+          <br>
+          <b>Bariyerlere</b> çarpmayın
+          <br>
+          oyun giderek hızlanır
+  </div>
+  
+  <div class="bg">
+  <div class="mountain">
+  <div class="mountain-top">
+  <div class="mountain-cap-1"></div>
+  <div class="mountain-cap-2"></div>
+  <div class="mountain-cap-3"></div>
+  </div>
+  </div>
+  <div class="mountain-two">
+  <div class="mountain-top">
+  <div class="mountain-cap-1"></div>
+  <div class="mountain-cap-2"></div>
+  <div class="mountain-cap-3"></div>
+  </div>
+  </div>
+  <div class="mountain-three">
+  <div class="mountain-top">
+  <div class="mountain-cap-1"></div>
+  <div class="mountain-cap-2"></div>
+  <div class="mountain-cap-3"></div>
+  </div>
+  </div>
+  <div class="cloud"></div>
+  </div>
+  
+  <div class="c1">
+  <div class="c3">
+  <div class="c3-stripe">
+      <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMjIuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDUxMiA1MTI7IiB4bWw6c3BhY2U9InByZXNlcnZlIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxnPgoJPHJlY3QgeD0iMTA1IiB5PSI0MzciIHN0eWxlPSJmaWxsOiMwMTQ4NTk7IiB3aWR0aD0iNjAiIGhlaWdodD0iNzUiLz4KCTxyZWN0IHg9IjM0NyIgeT0iNDM3IiBzdHlsZT0iZmlsbDojMDEyNjMxOyIgd2lkdGg9IjYwIiBoZWlnaHQ9Ijc1Ii8+Cgk8cGF0aCBzdHlsZT0iZmlsbDojRkYwMDM3OyIgZD0iTTQ5Ny41NjUsMzAyLjEyNkwzMzcuMTY3LDQ1LjA2M0MzMjAuMjgzLDE4LjAwNCwyOTAuMjQ0LDAsMjU2LDBsLTMwLDkzLjkxMmwxODkuMzM2LDI1OC43NTVIMTk2ICAgbDYwLDk1LjU5OWgxNjAuMzk4YzUyLjc5OSwwLDk1LjYwMi00Mi44MDIsOTUuNjAyLTk1LjYwMkM1MTIsMzM0LjEwOCw1MDYuNzE0LDMxNi43ODgsNDk3LjU2NSwzMDIuMTI2eiIvPgoJPHBhdGggc3R5bGU9ImZpbGw6I0ZGNDQzNzsiIGQ9Ik0xNC40MzUsMzAyLjEyNkwxNzQuODMzLDQ1LjA2M0MxOTEuNzE3LDE4LjAwNCwyMjEuNzU2LDAsMjU2LDB2MTIzLjkxMkw5Ni42NjQsMzUyLjY2N0gyNTZ2OTUuNTk5ICAgSDk1LjYwMkM0Mi44MDIsNDQ4LjI2NiwwLDQwNS40NjMsMCwzNTIuNjY0QzAsMzM0LjEwOCw1LjI4NiwzMTYuNzg4LDE0LjQzNSwzMDIuMTI2eiIvPgoJPHBhdGggc3R5bGU9ImZpbGw6I0ZGQ0QzNzsiIGQ9Ik0zNTguOTY5LDMyMC43OTdIMjU2bC0zMCwzMS44NjdsMzAsMzEuODY3aDE2MC4zOThjMTcuNTcyLDAsMzEuODY3LTE0LjI5NiwzMS44NjctMzEuODY3ICAgYzAtNi4wNzMtMS42MDYtMTEuNzI1LTQuNzcyLTE2LjhMMjgzLjA5Niw3OC44MDRjLTUuODg4LTkuNDM3LTE2LjAxOC0xNS4wNjktMjcuMDk2LTE1LjA2OWwtMzAsNDkuMjdsMzAsNDIuNzdMMzU4Ljk2OSwzMjAuNzk3eiIvPgoJPHBhdGggc3R5bGU9ImZpbGw6I0ZGREU3QTsiIGQ9Ik0yMjguOTA1LDc4LjgwMkw2OC41MDgsMzM1Ljg2MmMtMy4xNjgsNS4wNzctNC43NzQsMTAuNzI5LTQuNzc0LDE2LjgwMiAgIGMwLDE3LjU3MiwxNC4yOTYsMzEuODY3LDMxLjg2NywzMS44NjdIMjU2di02My43MzRIMTUzLjAzMkwyNTYsMTU1Ljc3NXYtOTIuMDRDMjQ0LjkyMSw2My43MzQsMjM0Ljc5MSw2OS4zNjcsMjI4LjkwNSw3OC44MDJ6Ii8+CjwvZz4KCgoKCgoKCgoKCgoKCgoKPC9zdmc+Cg==
+  " class="duba" height="50px">
+  </div>
+</div>
+<img src="" id="car" />
+  </div>
+  
+  
+  
+  
+  <div id="tekrar" v-if="oyunBittimi"><a href="javascript:;" id="tekraroyna" @click="tekrar">Oyna</a></div>
+  
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <script src="/Infinite Race/race.js"></script>
+  
+  
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js"></script><script src="./script.js"></script>
+  
+  
+  
+  </body></html>
