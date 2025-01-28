@@ -1,80 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gato</title>
-    <link rel="stylesheet" href="/Gato/gato.css">
+  <meta charset="UTF-8">
+  <title>Gato</title>
+  <link rel="stylesheet" href="gato.css">
+
 </head>
 <body>
-    <div id="container">
+<!-- partial:index.partial.html -->
+<html>
+    <head>
+        <title>GATO</title>
+    </head>
+    <body>
+        <div class="container">
+            <h1>GATO</h1>
+            <ul id="game">
+                <!-- first row -->
+                <li data-pos="0,0"></li>
+                <li data-pos="0,1"></li>
+                <li data-pos="0,2"></li>
+                <!-- second row -->
+                <li data-pos="1,0"></li>
+                <li data-pos="1,1"></li>
+                <li data-pos="1,2"></li>
+                <!-- third row -->
+                <li data-pos="2,0"></li>
+                <li data-pos="2,1"></li> 
+                <li data-pos="2,2"></li>
+            </ul>
+            
+            <button id="reset-game">Reiniciar</button>
+            
+            <!-- Game Messages -->
+            <div id="game-messages">
+                <span class="player-x-win">Jugador 1 gana!</span>
+                <span class="player-o-win">Jugador 2 gana!</span>
+                <span class="draw">Empate!</span>
+            </div>
+            
+            <aside id="nfo">
+                <h2>Turno</h2>
+                <div id="whos-turn" class="x">
+                    <span class="x">Jugador 1</span>
+                    <span class="o">Jugador 2</span>
+                </div>
+                
+                <h2>Score Card</h2>
+                <div id="score">
+                  Jugador 1: <span id="player-one-score">0</span> <br />
+                  Jugador 2: <span id="player-two-score">0</span> <br />
+                </div>
+            </aside>
+        </div>
+    </body>
+</html>
+<!-- partial -->
+  <script  src="gato.js"></script>
 
-        <div class="game-narrative" id="game-narrative-one">
-          <p class="game-narrative-text">In a world where two forces battle for domination of a war-torn landscape, only one will draw the line and reign supreme.</p>
-          <button class="game-btn" id="narrative-one-btn">...</button>
-        </div>
-      
-        <div class="game-narrative" id="game-narrative-two">
-          <p class="game-narrative-text">The year is 2048.</p>
-          <p class="game-narrative-text">In a post apocalyptic galaxy run by giant corporations, you are a cybernetically enhanced space marine with no memory of their past.</p>
-          <button class="game-btn" id="narrative-two-btn">...</button>
-        </div>
-      
-        <div class="game-narrative" id="game-narrative-three">
-          <p class="game-narrative-text">Seras el rpimero en derrotar a la IA?</p>
-          <p class="game-narrative-text">Lograras vencer a la computadora?...</p>
-          <div id="narrative-three-btns">
-            <button class="game-btn" id="narrative-three-btn">SI</button>
-            <div></div>
-            <a class="game-btn" id="puppies-btn" href="/Main Screen/mainscreen.html" target="_blank">NO</a>
-          </div>
-        </div>
-      
-        <div id = "header">
-          <p class="dramatic-text">
-            <span id = "tic-text">Tic </span>
-            <span id = "tac-text">Tac </span>
-            <span id = "doom-text">DOOM</span>
-          </p>
-        </div>
-      
-      
-        <div id="game-configuration"> 
-          <h2 id = "identity-label">Elije tu pieza</h2>
-          <div id="identity-selection" class="row">
-            <div class="cell identity-cell" value="X">X</div>
-            <div class="cell identity-cell" value="O">O</div>
-          </div>
-        </div>
-      
-        <div id="game-grid">
-          <div class="row">
-            <div class="cell game-cell" id="c00"></div>
-            <div class="cell game-cell" id="c01"></div>
-            <div class="cell game-cell" id="c02"></div>
-          </div>
-          <div class="row">
-            <div class="cell game-cell" id="c10"></div>
-            <div class="cell game-cell" id="c11"></div>
-            <div class="cell game-cell" id="c12"></div>
-          </div>
-          <div class="row">
-            <div class="cell game-cell" id="c20"></div>
-            <div class="cell game-cell" id="c21"></div>
-            <div class="cell game-cell" id="c22"></div>
-          </div>
-          <div class="computer-threat">
-            <p><span id ="computer-threat-text"></span></p>
-          </div>
-        </div>
-      
-        <div id="game-over">
-          <h2 id="game-end-heading"></h2>
-          <h3 id="game-end-subheading"></h2>
-          <button class="game-btn" id="game-reset-btn">&#8634; Jugar de nuevo</button>
-        </div>
-        
-      </div>
 </body>
 </html>
-<script src="/Gato/gato.js"></script>
