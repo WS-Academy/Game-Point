@@ -1,621 +1,688 @@
-(function () {
-    var isStart = false;
-    var tetris = {
-      board: [],
-      boardDiv: null,
-      canvas: null,
-      pSize: 20,
-      canvasHeight: 440,
-      canvasWidth: 200,
-      boardHeight: 0,
-      boardWidth: 0,
-      spawnX: 4,
-      spawnY: 1,
-      shapes: [
-        [
-          [-1, 1],
-          [0, 1],
-          [1, 1],
-          [0, 0], //TEE
-        ],
-        [
-          [-1, 0],
-          [0, 0],
-          [1, 0],
-          [2, 0], //line
-        ],
-        [
-          [-1, -1],
-          [-1, 0],
-          [0, 0],
-          [1, 0], //L EL
-        ],
-        [
-          [1, -1],
-          [-1, 0],
-          [0, 0],
-          [1, 0], //R EL
-        ],
-        [
-          [0, -1],
-          [1, -1],
-          [-1, 0],
-          [0, 0], // R ess
-        ],
-        [
-          [-1, -1],
-          [0, -1],
-          [0, 0],
-          [1, 0], //L ess
-        ],
-        [
-          [0, -1],
-          [1, -1],
-          [0, 0],
-          [1, 0], //square
-        ],
-      ],
-      tempShapes: null,
-      curShape: null,
-      curShapeIndex: null,
-      curX: 0,
-      curY: 0,
-      curSqs: [],
-      nextShape: null,
-      nextShapeDisplay: null,
-      nextShapeIndex: null,
-      sqs: [],
-      score: 0,
-      scoreDisplay: null,
-      level: 1,
-      levelDisplay: null,
-      numLevels: 10,
-      time: 0,
-      maxTime: 1000,
-      timeDisplay: null,
-      isActive: 0,
-      curComplete: false,
-      timer: null,
-      sTimer: null,
-      speed: 700,
-      lines: 0,
-  
-      init: function () {
-        isStart = true;
-        this.canvas = document.getElementById('canvas');
-        this.initBoard();
-        this.initInfo();
-        this.initLevelScores();
-        this.initShapes();
-        this.bindKeyEvents();
-        this.play();
-      },
-      initBoard: function () {
-        this.boardHeight = this.canvasHeight / this.pSize;
-        this.boardWidth = this.canvasWidth / this.pSize;
-        var s = this.boardHeight * this.boardWidth;
-        for (var i = 0; i < s; i++) {
-          this.board.push(0);
-        }
-        //this.boardDiv = document.getElementById('board); //for debugging
-      },
-      initInfo: function () {
-        this.nextShapeDisplay = document.getElementById('next_shape');
-        this.levelDisplay = document
-          .getElementById('level')
-          .getElementsByTagName('span')[0];
-        this.timeDisplay = document
-          .getElementById('time')
-          .getElementsByTagName('span')[0];
-        this.scoreDisplay = document
-          .getElementById('score')
-          .getElementsByTagName('span')[0];
-        this.linesDisplay = document
-          .getElementById('lines')
-          .getElementsByTagName('span')[0];
-        this.setInfo('time');
-        this.setInfo('score');
-        this.setInfo('level');
-        this.setInfo('lines');
-      },
-      initShapes: function () {
-        this.curSqs = [];
-        this.curComplete = false;
-        this.shiftTempShapes();
-        this.curShapeIndex = this.tempShapes[0];
-        this.curShape = this.shapes[this.curShapeIndex];
-        this.initNextShape();
-        this.setCurCoords(this.spawnX, this.spawnY);
-        this.drawShape(this.curX, this.curY, this.curShape);
-      },
-      initNextShape: function () {
-        if (typeof this.tempShapes[1] === 'undefined') {
-          this.initTempShapes();
-        }
-        try {
-          this.nextShapeIndex = this.tempShapes[1];
-          this.nextShape = this.shapes[this.nextShapeIndex];
-          this.drawNextShape();
-        } catch (e) {
-          throw new Error('Could not create next shape. ' + e);
-        }
-      },
-      initTempShapes: function () {
-        this.tempShapes = [];
-        for (var i = 0; i < this.shapes.length; i++) {
-          this.tempShapes.push(i);
-        }
-        var k = this.tempShapes.length;
-        while (--k) {
-          //Fisher Yates Shuffle
-          var j = Math.floor(Math.random() * (k + 1));
-          var tempk = this.tempShapes[k];
-          var tempj = this.tempShapes[j];
-          this.tempShapes[k] = tempj;
-          this.tempShapes[j] = tempk;
-        }
-      },
-      shiftTempShapes: function () {
-        try {
-          if (
-            typeof this.tempShapes === 'undefined' ||
-            this.tempShapes === null
-          ) {
-            this.initTempShapes();
-          } else {
-            this.tempShapes.shift();
-          }
-        } catch (e) {
-          throw new Error('Could not shift or init tempShapes: ' + e);
-        }
-      },
-      initTimer: function () {
-        var me = this;
-        var tLoop = function () {
-          me.incTime();
-          me.timer = setTimeout(tLoop, 2000);
-        };
-        this.timer = setTimeout(tLoop, 2000);
-      },
-      initLevelScores: function () {
-        var c = 1;
-        for (var i = 1; i <= this.numLevels; i++) {
-          this['level' + i] = [c * 1000, 40 * i, 5 * i]; //for nxt level, row score, p sore,
-          c = c + c;
-        }
-      },
-      setInfo: function (el) {
-        this[el + 'Display'].innerHTML = this[el];
-      },
-      drawNextShape: function () {
-        var ns = [];
-        for (var i = 0; i < this.nextShape.length; i++) {
-          ns[i] = this.createSquare(
-            this.nextShape[i][0] + 2,
-            this.nextShape[i][1] + 2,
-            this.nextShapeIndex
-          );
-        }
-        this.nextShapeDisplay.innerHTML = '';
-        for (var k = 0; k < ns.length; k++) {
-          this.nextShapeDisplay.appendChild(ns[k]);
-        }
-      },
-      drawShape: function (x, y, p) {
-        for (var i = 0; i < p.length; i++) {
-          var newX = p[i][0] + x;
-          var newY = p[i][1] + y;
-          this.curSqs[i] = this.createSquare(newX, newY, this.curShapeIndex);
-        }
-        for (var k = 0; k < this.curSqs.length; k++) {
-          this.canvas.appendChild(this.curSqs[k]);
-        }
-      },
-      createSquare: function (x, y, type) {
-        var el = document.createElement('div');
-        el.className = 'square type' + type;
-        el.style.left = x * this.pSize + 'px';
-        el.style.top = y * this.pSize + 'px';
-        return el;
-      },
-      removeCur: function () {
-        var me = this;
-        this.curSqs.eachdo(function () {
-          me.canvas.removeChild(this);
-        });
-        this.curSqs = [];
-      },
-      setCurCoords: function (x, y) {
-        this.curX = x;
-        this.curY = y;
-      },
-      bindKeyEvents: function () {
-        var me = this;
-        var event = 'keypress';
-        if (this.isSafari() || this.isIE()) {
-          event = 'keydown';
-        }
-        var cb = function (e) {
-          me.handleKey(e);
-        };
-        if (window.addEventListener) {
-          document.addEventListener(event, cb, false);
-        } else {
-          document.attachEvent('on' + event, cb);
-        }
-      },
-      handleKey: function (e) {
-        var c = this.whichKey(e);
-        var dir = '';
-        switch (c) {
-          case 37:
-            this.move('L');
-            break;
-          case 38:
-            this.move('RT');
-            break;
-          case 39:
-            this.move('R');
-            break;
-          case 40:
-            this.move('D');
-            break;
-          case 27: //esc: pause
-            this.togglePause();
-            break;
-          default:
-            break;
-        }
-      },
-      whichKey: function (e) {
-        var c;
-        if (window.event) {
-          c = window.event.keyCode;
-        } else if (e) {
-          c = e.keyCode;
-        }
-        return c;
-      },
-      incTime: function () {
-        this.time++;
-        this.setInfo('time');
-      },
-      incScore: function (amount) {
-        this.score = this.score + amount;
-        this.setInfo('score');
-      },
-      incLevel: function () {
-        this.level++;
-        this.speed = this.speed - 75;
-        this.setInfo('level');
-      },
-      incLines: function (num) {
-        this.lines += num;
-        this.setInfo('lines');
-      },
-      calcScore: function (args) {
-        var lines = args.lines || 0;
-        var shape = args.shape || false;
-        var speed = args.speed || 0;
-        var score = 0;
-  
-        if (lines > 0) {
-          score += lines * this['level' + this.level][1];
-          this.incLines(lines);
-        }
-        if (shape === true) {
-          score += shape * this['level' + this.level][2];
-        }
-        /*if (speed > 0){ score += speed * this["level" +this .level[3]];}*/
-        this.incScore(score);
-      },
-      checkScore: function () {
-        if (this.score >= this['level' + this.level][0]) {
-          this.incLevel();
-        }
-      },
-      gameOver: function () {
-        this.clearTimers();
-        isStart = false;
-        this.canvas.innerHTML = '<h1>GAME OVER</h1>';
-      },
-      play: function () {
-        var me = this;
-        if (this.timer === null) {
-          this.initTimer();
-        }
-        var gameLoop = function () {
-          me.move('D');
-          if (me.curComplete) {
-            me.markBoardShape(me.curX, me.curY, me.curShape);
-            me.curSqs.eachdo(function () {
-              me.sqs.push(this);
-            });
-            me.calcScore({ shape: true });
-            me.checkRows();
-            me.checkScore();
-            me.initShapes();
-            me.play();
-          } else {
-            me.pTimer = setTimeout(gameLoop, me.speed);
-          }
-        };
-        this.pTimer = setTimeout(gameLoop, me.speed);
-        this.isActive = 1;
-      },
-      togglePause: function () {
-        if (this.isActive === 1) {
-          this.clearTimers();
-          this.isActive = 0;
-        } else {
-          this.play();
-        }
-      },
-      clearTimers: function () {
-        clearTimeout(this.timer);
-        clearTimeout(this.pTimer);
-        this.timer = null;
-        this.pTimer = null;
-      },
-      move: function (dir) {
-        var s = '';
-        var me = this;
-        var tempX = this.curX;
-        var tempY = this.curY;
-        switch (dir) {
-          case 'L':
-            s = 'left';
-            tempX -= 1;
-            break;
-          case 'R':
-            s = 'left';
-            tempX += 1;
-            break;
-          case 'D':
-            s = 'top';
-            tempY += 1;
-            break;
-          case 'RT':
-            this.rotate();
-            return true;
-            break;
-          default:
-            throw new Error('wtf');
-            break;
-        }
-        if (this.checkMove(tempX, tempY, this.curShape)) {
-          this.curSqs.eachdo(function (i) {
-            var l = parseInt(this.style[s], 10);
-            dir === 'L' ? (l -= me.pSize) : (l += me.pSize);
-            this.style[s] = l + 'px';
-          });
-          this.curX = tempX;
-          this.curY = tempY;
-        } else if (dir === 'D') {
-          if (this.curY === 1 || this.time === this.maxTime) {
-            this.gameOver();
-            return false;
-          }
-          this.curComplete = true;
-        }
-      },
-      rotate: function () {
-        if (this.curShapeIndex !== 6) {
-          //square
-          var temp = [];
-          this.curShape.eachdo(function () {
-            temp.push([this[1] * -1, this[0]]);
-          });
-          if (this.checkMove(this.curX, this.curY, temp)) {
-            this.curShape = temp;
-            this.removeCur();
-            this.drawShape(this.curX, this.curY, this.curShape);
-          } else {
-            throw new Error('Could not rotate!');
-          }
-        }
-      },
-      checkMove: function (x, y, p) {
-        if (this.isOB(x, y, p) || this.isCollision(x, y, p)) {
-          return false;
-        }
-        return true;
-      },
-      isCollision: function (x, y, p) {
-        var me = this;
-        var bool = false;
-        p.eachdo(function () {
-          var newX = this[0] + x;
-          var newY = this[1] + y;
-          if (me.boardPos(newX, newY) === 1) {
-            bool = true;
-          }
-        });
-        return bool;
-      },
-      isOB: function (x, y, p) {
-        var w = this.boardWidth - 1;
-        var h = this.boardHeight - 1;
-        var bool = false;
-        p.eachdo(function () {
-          var newX = this[0] + x;
-          var newY = this[1] + y;
-          if (newX < 0 || newX > w || newY < 0 || newY > h) {
-            bool = true;
-          }
-        });
-        return bool;
-      },
-      getRowState: function (y) {
-        var c = 0;
-        for (var x = 0; x < this.boardWidth; x++) {
-          if (this.boardPos(x, y) === 1) {
-            c = c + 1;
-          }
-        }
-        if (c === 0) {
-          return 'E';
-        }
-        if (c === this.boardWidth) {
-          return 'F';
-        }
-        return 'U';
-      },
-      checkRows: function () {
-        var me = this;
-        var start = this.boardHeight;
-        this.curShape.eachdo(function () {
-          var n = this[1] + me.curY;
-          console.log(n);
-          if (n < start) {
-            start = n;
-          }
-        });
-        console.log(start);
-  
-        var c = 0;
-        var stopCheck = false;
-        for (var y = this.boardHeight - 1; y >= 0; y--) {
-          switch (this.getRowState(y)) {
-            case 'F':
-              this.removeRow(y);
-              c++;
-              break;
-            case 'E':
-              if (c === 0) {
-                stopCheck = true;
-              }
-              break;
-            case 'U':
-              if (c > 0) {
-                this.shiftRow(y, c);
-              }
-              break;
-            default:
-              break;
-          }
-          if (stopCheck === true) {
-            break;
-          }
-        }
-        if (c > 0) {
-          this.calcScore({ lines: c });
-        }
-      },
-      shiftRow: function (y, amount) {
-        var me = this;
-        for (var x = 0; x < this.boardWidth; x++) {
-          this.sqs.eachdo(function () {
-            if (me.isAt(x, y, this)) {
-              me.setBlock(x, y + amount, this);
-            }
-          });
-        }
-        me.emptyBoardRow(y);
-      },
-      emptyBoardRow: function (y) {
-        for (var x = 0; x < this.boardWidth; x++) {
-          this.markBoardAt(x, y, 0);
-        }
-      },
-      removeRow: function (y) {
-        for (var x = 0; x < this.boardWidth; x++) {
-          this.removeBlock(x, y);
-        }
-      },
-      removeBlock: function (x, y) {
-        var me = this;
-        this.markBoardAt(x, y, 0);
-        this.sqs.eachdo(function (i) {
-          if (me.getPos(this)[0] === x && me.getPos(this)[1] === y) {
-            me.canvas.removeChild(this);
-            me.sqs.splice(i, 1);
-          }
-        });
-      },
-      setBlock: function (x, y, block) {
-        this.markBoardAt(x, y, 1);
-        var newX = x * this.pSize;
-        var newY = y * this.pSize;
-        block.style.left = newX + 'px';
-        block.style.top = newY + 'px';
-      },
-      isAt: function (x, y, block) {
-        if (this.getPos(block)[0] === x && this.getPos(block)[1] === y) {
-          return true;
-        }
-        return false;
-      },
-      getPos: function (block) {
-        var p = [];
-        p.push(parseInt(block.style.left, 10) / this.pSize);
-        p.push(parseInt(block.style.top, 10) / this.pSize);
-        return p;
-      },
-      getBoardIdx: function (x, y) {
-        return x + y * this.boardWidth;
-      },
-      boardPos: function (x, y) {
-        return this.board[x + y * this.boardWidth];
-      },
-      markBoardAt: function (x, y, val) {
-        this.board[this.getBoardIdx(x, y)] = val;
-      },
-      markBoardShape: function (x, y, p) {
-        var me = this;
-        p.eachdo(function (i) {
-          var newX = p[i][0] + x;
-          var newY = p[i][1] + y;
-          me.markBoardAt(newX, newY, 1);
-        });
-      },
-      isIE: function () {
-        return this.bTest(/IE/);
-      },
-      isFirefox: function () {
-        return this.bTest(/Firefox/);
-      },
-      isSafari: function () {
-        return this.bTest(/Safari/);
-      },
-      bTest: function (rgx) {
-        return rgx.test(navigator.userAgent);
-      },
-    };
-    const btn = document.querySelector('#start');
-    btn.addEventListener('click', function () {
-      btn.style.display = 'none';
-      if (!isStart) {
-        tetris.init();
-      }
-    });
-  })();
-  
-  if (!Array.prototype.eachdo) {
-    Array.prototype.eachdo = function (fn) {
-      for (var i = 0; i < this.length; i++) {
-        fn.call(this[i], i);
-      }
-    };
-  }
-  if (!Array.prototype.remDup) {
-    Array.prototype.remDup = function () {
-      var temp = [];
-      for (var i = 0; i < this.length; i++) {
-        var bool = true;
-        for (var j = i + 1; j < this.length; j++) {
-          if (this[i] === this[j]) {
-            bool = false;
-          }
-        }
-        if (bool === true) {
-          temp.push(this[i]);
-        }
-      }
-      return temp;
-    };
-  }
+var gridSpace = 30;
 
-  // encontrar los valores de level
-  // alinear el codigo en el centro y mantener la vida del codigo para la renderizacion de la pantalla
-  // 13/11/24
+var fallingPiece;
+var gridPieces = [];
+var lineFades = [];
+var gridWorkers = [];
+
+var currentScore = 0;
+var currentLevel = 1;
+var linesCleared = 0;
+
+var ticks = 0;
+var updateEvery = 15;
+var updateEveryCurrent = 15;
+var fallSpeed = gridSpace * 0.5;
+var pauseGame = false;
+var gameOver = false;
+
+var gameEdgeLeft  = 150;
+var gameEdgeRight = 450;
+
+var colors = [
+  '#ecb5ff',
+  '#ffa0ab',
+  '#8cffb4',
+  '#ff8666',
+  '#80c3f5',
+  '#c2e77d',
+  '#fdf9a1',
+];
+
+function setup()  {
+  createCanvas(600, 540);
+  
+  fallingPiece = new playPiece();
+  fallingPiece.resetPiece();
+  textFont('Trebuchet MS');
+}
+
+function draw() {
+  var colorDark = "#071820",
+      colorLight = "#344c57",
+      colorBackground = "#ecf4cb";
+
+  background(colorBackground);
+  
+  //Right side info
+  fill(25);
+  noStroke();
+  rect(gameEdgeRight, 0, 150, height);
+  //Left side info
+  rect(0, 0, gameEdgeLeft, height);
+  
+  fill(colorBackground);
+  //Score rectangle
+  rect(450, 50, 150, 70);
+  //Next piece rectangle
+  rect(460, 300, 130, 130, 5, 5);
+  //Level rectangle
+  rect(460, 130, 130, 60, 5, 5);
+  //Lines rectangle
+  rect(460, 200, 130, 60, 5, 5);
+  
+  
+  fill(colorLight);
+  //Score lines
+  rect(450, 55, 150, 20);
+  rect(450, 80, 150, 4);
+  rect(450, 110, 150, 4);
+  
+  fill(colorBackground);
+  //Score banner
+  rect(460, 30, 130, 35, 5, 5);
+
+  strokeWeight(3);
+  noFill();
+  stroke(colorLight);
+  //Score banner inner rectangle
+  rect(465, 35, 120, 25, 5, 5);
+  
+  //Next piece inner rectangle
+  stroke(colorLight);
+  rect(465, 305, 120, 120, 5, 5);
+  //Level inner rectangle
+  rect(465, 135, 120, 50, 5, 5);
+  //Lines inner rectangle
+  rect(465, 205, 120, 50, 5, 5);
+
+  //Draw the info labels
+  fill(25);
+  noStroke();
+  textSize(24);
+  textAlign(CENTER);
+  text("Puntaje", 525, 55);
+  text("Nivel", 525, 158);
+  text("Lineas", 525, 228);
+  
+  //Draw the actual info
+  textSize(24);
+  textAlign(RIGHT);
+  
+  //The score
+  text(currentScore, 560, 105);
+  text(currentLevel, 560, 180);
+  text(linesCleared, 560, 250);
+  
+  stroke(colorDark);
+  line(gameEdgeRight, 0, gameEdgeRight, height);
+  
+  fallingPiece.show();
+  
+  if(keyIsDown(DOWN_ARROW)) {
+    updateEvery = 2;
+  } else {
+    updateEvery = updateEveryCurrent;
+  }
+  
+  if(!pauseGame)  {
+    ticks++;
+    if(ticks >= updateEvery) {
+      ticks = 0;
+      fallingPiece.fall(fallSpeed);
+    }
+  }
+  
+  for(let i = 0; i < gridPieces.length; i++)  {
+    gridPieces[i].show();
+  }
+  
+  for(let i = 0; i < lineFades.length; i++) {
+    lineFades[i].show();
+  }
+  
+  if(gridWorkers.length > 0) {
+    gridWorkers[0].work();
+  }
+  
+  //Explain the controls
+  textAlign(CENTER);
+  fill(255);
+  noStroke();
+  textSize(14);
+  text("Controles:\n↑\n← ↓ →\n", 75, 175);
+  text("Izquierda y Derecha:\nmover a los lados", 75, 250);
+  text("Arriba:\ngirar", 75, 300);
+  text("Abajo:\ncaer mas rapido", 75, 350);
+  
+  //Game over text
+  if(gameOver)  {
+    fill(colorDark);
+    textSize(64);
+    textAlign(CENTER);
+    text("FIN\nDel Juego!", 300, 270);
+  }
+}
+
+function lineBar(y, index)  {
+  this.pos = new p5.Vector(gameEdgeLeft, y)
+  this.width = gameEdgeRight - gameEdgeLeft;
+  this.index = index;
+
+  this.show = function()  {
+    fill(255);
+    noStroke();
+    rect(this.pos.x, this.pos.y, this.width, gridSpace);
+
+    if(this.width + this.pos.x > this.pos.x) {
+      this.width -= 10;
+      this.pos.x += 5;
+    } else {
+      lineFades.splice(this.index, 1);
+      //shiftGridDown(this.pos.y, gridSpace);
+      gridWorkers.push(new worker(this.pos.y, gridSpace));
+    }
+  }
+}
+
+function keyPressed() {
+  if(!pauseGame)  {
+    if(keyCode === LEFT_ARROW) {
+      fallingPiece.input(LEFT_ARROW);
+    } else if(keyCode === RIGHT_ARROW) {
+      fallingPiece.input(RIGHT_ARROW);
+    }
+    if(keyCode === UP_ARROW) {
+      fallingPiece.input(UP_ARROW);
+    }
+  }
+}
+
+function playPiece()  {
+  this.pos = new p5.Vector(0, 0);
+  this.rotation = 0;
+  this.nextPieceType = Math.floor(Math.random() * 7);
+  this.nextPieces = [];
+  this.pieceType = 0;
+  this.pieces = [];
+  this.orientation = [];
+  this.fallen = false;
+  
+  this.nextPiece = function() {
+    this.nextPieceType = pseudoRandom(this.pieceType);
+    this.nextPieces = [];
+
+    var points = orientPoints(this.nextPieceType, 0);
+    var xx = 525, yy = 365;
+    
+    if(this.nextPieceType != 0 && this.nextPieceType != 3)  {
+      xx += (gridSpace * 0.5);
+    }
+
+    this.nextPieces.push(new square(xx + points[0][0] * gridSpace, yy + points[0][1] * gridSpace, this.nextPieceType));
+    this.nextPieces.push(new square(xx + points[1][0] * gridSpace, yy + points[1][1] * gridSpace, this.nextPieceType));
+    this.nextPieces.push(new square(xx + points[2][0] * gridSpace, yy + points[2][1] * gridSpace, this.nextPieceType));
+    this.nextPieces.push(new square(xx + points[3][0] * gridSpace, yy + points[3][1] * gridSpace, this.nextPieceType));
+  }
+  this.fall = function(amount)  {
+    if(!this.futureCollision(0, amount, this.rotation)) {
+      this.addPos(0, amount);
+      this.fallen = true;
+    } else {
+      //WE HIT SOMETHING D:
+      if(!this.fallen)  {
+        //Game over aka pause forever
+        pauseGame = true;
+        gameOver = true;
+      } else {
+        this.commitShape();
+      }
+    }
+  }
+  this.resetPiece = function()  {
+    this.rotation = 0;
+    this.fallen = false;
+    this.pos.x = 330;
+    this.pos.y = -60;
+    
+    this.pieceType = this.nextPieceType;
+    
+    this.nextPiece();
+    this.newPoints();
+  }
+  this.newPoints = function() {
+    var points = orientPoints(this.pieceType, this.rotation);
+    this.orientation = points;
+    this.pieces = [];
+    this.pieces.push(new square(this.pos.x + points[0][0] * gridSpace, this.pos.y + points[0][1] * gridSpace, this.pieceType));
+    this.pieces.push(new square(this.pos.x + points[1][0] * gridSpace, this.pos.y + points[1][1] * gridSpace, this.pieceType));
+    this.pieces.push(new square(this.pos.x + points[2][0] * gridSpace, this.pos.y + points[2][1] * gridSpace, this.pieceType));
+    this.pieces.push(new square(this.pos.x + points[3][0] * gridSpace, this.pos.y + points[3][1] * gridSpace, this.pieceType));
+  }
+  //Whenever the piece gets rotated, this gets the new positions of the squares
+  this.updatePoints = function()  {
+    if(this.pieces)  {
+      var points = orientPoints(this.pieceType, this.rotation);
+      this.orientation = points;
+      for(var i = 0; i < 4; i++)  {
+        this.pieces[i].pos.x = this.pos.x + points[i][0] * gridSpace;
+        this.pieces[i].pos.y = this.pos.y + points[i][1] * gridSpace;  
+      }
+    }
+  }
+  //Adds to the position of the piece and it's square objects
+  this.addPos = function(x, y) {
+    this.pos.x += x;
+    this.pos.y += y;
+    
+    if(this.pieces)  {
+      for(var i = 0; i < 4; i++)  {
+        this.pieces[i].pos.x += x;
+        this.pieces[i].pos.y += y;  
+      }
+    }
+  }
+  //Checks for collisions after adding the x and y to the current positions and also applying the given rotation
+  this.futureCollision = function(x, y, rotation) {
+    var xx, yy, points = 0;
+    if(rotation != this.rotation)  {
+      //Gets a new point orientation to check against
+      points = orientPoints(this.pieceType, rotation);
+    }
+    
+    for(var i = 0; i < this.pieces.length; i++) {
+      if(points)  {
+        xx = this.pos.x + points[i][0] * gridSpace;
+        yy = this.pos.y + points[i][1] * gridSpace;  
+      } else {
+        xx = this.pieces[i].pos.x + x;
+        yy = this.pieces[i].pos.y + y;
+      }
+      //Check against walls and bottom
+      if(xx < gameEdgeLeft || xx + gridSpace > gameEdgeRight || yy + gridSpace > height)  {
+        return true;
+      }
+      //Check against all pieces in the main gridPieces array (stationary pieces)
+      for(var j = 0; j < gridPieces.length; j++)  {
+        if(xx === gridPieces[j].pos.x)  {
+          if(yy >= gridPieces[j].pos.y && yy < gridPieces[j].pos.y + gridSpace)  {
+            return true;
+          }
+          if(yy + gridSpace > gridPieces[j].pos.y && yy + gridSpace <= gridPieces[j].pos.y + gridSpace)  {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  //Handles input ;)
+  this.input = function(key) {
+    switch(key) {
+      case LEFT_ARROW:
+        if(!this.futureCollision(-gridSpace, 0, this.rotation))  {
+          this.addPos(-gridSpace, 0);
+        }
+      break;
+      case RIGHT_ARROW:
+        if(!this.futureCollision(gridSpace, 0, this.rotation))  {
+          this.addPos(gridSpace, 0);
+        }
+      break;
+      case UP_ARROW:
+        var rotation = this.rotation + 1;
+        if(rotation > 3)  {
+          rotation = 0;
+        }
+        if(!this.futureCollision(gridSpace, 0, rotation))  {
+          this.rotate();
+        }
+      break;
+    }
+  }
+  //Rotates the piece by one
+  this.rotate = function()  {
+    this.rotation += 1;
+    if(this.rotation > 3) {
+      this.rotation = 0;
+    }
+    this.updatePoints();
+  }
+  //Displays the piece's square objects
+  this.show = function()  {
+    for(var i = 0; i < this.pieces.length; i++) {
+      this.pieces[i].show();
+    }
+    for(var i = 0; i < this.nextPieces.length; i++) {
+      this.nextPieces[i].show();
+    }
+  }
+  //Add the pieces to the gridPieces
+  this.commitShape = function()  {
+    for(var i = 0; i < this.pieces.length; i++) {
+      gridPieces.push(this.pieces[i])
+    }
+    this.resetPiece();
+    analyzeGrid();
+  }
+}
+
+function square(x, y, type)  {
+  this.pos = new p5.Vector(x, y);
+  this.type = type;
+  
+  this.show = function()  {
+    strokeWeight(2);
+    var colorDark = "#092e1d",
+        colorMid = colors[this.type];
+
+    fill(colorMid);
+    stroke(25);
+    rect(this.pos.x, this.pos.y, gridSpace - 1, gridSpace - 1);
+
+    noStroke();
+    fill(255); 
+    rect(this.pos.x + 6, this.pos.y + 6, 18, 2);    
+    rect(this.pos.x + 6, this.pos.y + 6, 2, 16);  
+    fill(25);
+    rect(this.pos.x + 6, this.pos.y + 20, 18, 2);    
+    rect(this.pos.x + 22, this.pos.y + 6, 2, 16); 
+  }
+}
+
+//Basically random with a bias against the same piece twice
+function pseudoRandom(previous) {
+  var roll = Math.floor(Math.random() * 8);
+  if(roll === previous || roll === 7) {
+    roll = Math.floor(Math.random() * 7);
+  }
+  return roll;
+}
+
+//Checks until it can no longer find any horizontal staights
+function analyzeGrid()  {
+  var score = 0;
+  while(checkLines()) {
+    score += 100;
+    linesCleared += 1;
+    if(linesCleared % 10 === 0) {
+      currentLevel += 1;
+      //Increase speed here
+      if(updateEveryCurrent > 4)  {
+        updateEveryCurrent -= 1;
+      }
+    }
+  }
+  if(score > 100) {
+    score *= 2;
+  }
+  currentScore += score;
+}
+
+function checkLines()  {
+  var count = 0;
+  var runningY = -1;
+  var runningIndex = -1;
+  
+  gridPieces.sort(function(a, b)  {
+    return a.pos.y - b.pos.y;
+  });
+  
+  for(var i = 0; i < gridPieces.length; i++)  {
+    if(gridPieces[i].pos.y === runningY) {
+      count++;
+      if(count === 10)  {
+        //YEEHAW
+        gridPieces.splice(runningIndex, 10);
+
+        lineFades.push(new lineBar(runningY));
+        return true;
+      }
+    } else {
+      runningY = gridPieces[i].pos.y;
+      count = 1;
+      runningIndex = i;
+    }
+  }
+  return false;
+}
+
+function worker(y, amount) {
+  this.amountActual = 0;
+  this.amountTotal = amount;
+  this.yVal = y;
+
+  this.work = function() {
+    if(this.amountActual < this.amountTotal) {
+      for(var j = 0; j < gridPieces.length; j++)  {
+        if(gridPieces[j].pos.y < y)  {
+          gridPieces[j].pos.y += 5;
+        }
+      }
+      this.amountActual += 5;
+    } else {
+      gridWorkers.shift();
+    }
+  }
+}
+
+//Sorts out the block positions for a given type and rotation
+function orientPoints(pieceType, rotation)  {
+  var results = [];
+  switch(pieceType) {
+    case 0:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-2, 0],
+            [-1, 0],
+            [ 0, 0],
+            [ 1, 0]
+          ];
+        break;
+        case 1:
+          results = [
+            [0, -1],
+            [0,  0],
+            [0,  1],
+            [0,  2]
+          ];
+        break;
+        case 2:
+          results = [
+            [-2, 1],
+            [-1, 1],
+            [ 0, 1],
+            [ 1, 1]
+          ];
+        break;
+        case 3:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [-1,  1],
+            [-1,  2]
+          ];
+        break;          
+      }
+    break;
+    case 1:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-2, -1],
+            [-2,  0],
+            [-1,  0],
+            [ 0,  0]
+          ];          
+        break;
+        case 1:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [-1,  1],
+            [ 0, -1]
+          ]; 
+        break;
+        case 2:
+          results = [
+            [-2,  0],
+            [-1,  0],
+            [ 0,  0],
+            [ 0,  1]
+          ];           
+        break;
+        case 3:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [-1,  1],
+            [-2,  1]
+          ]; 
+        break;          
+      }      
+    break;
+    case 2:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-2,  0],
+            [-1,  0],
+            [ 0,  0],
+            [ 0, -1]
+          ]; 
+        break;
+        case 1:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [-1,  1],
+            [ 0,  1]
+          ]; 
+        break;
+        case 2:
+          results = [
+            [-2, 0],
+            [-2, 1],
+            [-1, 0],
+            [ 0, 0]
+          ]; 
+        break;
+        case 3:
+          results = [
+            [-2, -1],
+            [-1, -1],
+            [-1,  0],
+            [-1,  1]
+          ]; 
+        break;          
+      }      
+    break;
+    case 3:
+      results = [
+        [-1, -1],
+        [ 0, -1],
+        [-1,  0],
+        [ 0,  0]
+      ];    
+    break;
+    case 4:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-1, -1],
+            [-2,  0],
+            [-1,  0],
+            [ 0, -1]
+          ]; 
+        break;
+        case 1:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [ 0,  0],
+            [ 0,  1]
+          ]; 
+        break;
+        case 2:
+          results = [
+            [-1,  0],
+            [-2,  1],
+            [-1,  1],
+            [ 0,  0]
+          ]; 
+        break;
+        case 3:
+          results = [
+            [-2, -1],
+            [-2,  0],
+            [-1,  0],
+            [-1,  1]
+          ]; 
+        break;          
+      }      
+    break;
+    case 5:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-2,  0],
+            [-1,  0],
+            [-1, -1],
+            [ 0,  0]
+          ]; 
+        break;
+        case 1:
+          results = [
+            [-1, -1],
+            [-1,  0],
+            [-1,  1],
+            [ 0,  0]
+          ]; 
+        break;
+        case 2:
+          results = [
+            [-2,  0],
+            [-1,  0],
+            [ 0,  0],
+            [-1,  1]
+          ]; 
+        break;
+        case 3:
+          results = [
+            [-2,  0],
+            [-1, -1],
+            [-1,  0],
+            [-1,  1]
+          ]; 
+        break;          
+      }      
+    break;
+    case 6:
+      switch(rotation)  {
+        case 0:
+          results = [
+            [-2, -1],
+            [-1, -1],
+            [-1,  0],
+            [ 0,  0]
+          ]; 
+        break;
+        case 1:
+          results = [
+            [-1,  0],
+            [-1,  1],
+            [ 0,  0],
+            [ 0, -1]
+          ];           
+        break;
+        case 2:
+          results = [
+            [-2,  0],
+            [-1,  0],
+            [-1,  1],
+            [ 0,  1]
+          ]; 
+        break;
+        case 3:
+          results = [
+            [-2,  0],
+            [-2,  1],
+            [-1,  0],
+            [-1, -1]
+          ]; 
+        break;          
+      }      
+    break;      
+  }
+  return results;
+}
