@@ -1089,3 +1089,22 @@
   }
 
   
+  .news-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    justify-content: center; /* Alinear las tarjetas al centro */
+}
+
+.news-card {
+    max-width: 100%;
+    box-shadow: var(--shadow);
+    border-radius: var(--radius-5);
+    overflow: hidden; /* Evita que el contenido desborde */
+    transform: scale(1); /* Tamaño normal */
+    transition: transform 0.3s ease; /* Efecto suave al interactuar */
+}
+
+.news-card:hover {
+    transform: scale(1.05); /* Efecto de agrandamiento al pasar el mouse */
+}
